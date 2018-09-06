@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!-- Parameters used by tests at runtime -->
+  <TestRunParameters>
+    <Parameter name="subscriptionKey" value="YOUR_SUBSCRIPTIONKEY" />
+    <Parameter name="appId" value="YOUR_APPID" />
+    <Parameter name="endpoint" value="YOUR_ENDPOINT e.g. https://westus.api.cognitive.microsoft.com" />
+  </TestRunParameters>
+</RunSettings>
