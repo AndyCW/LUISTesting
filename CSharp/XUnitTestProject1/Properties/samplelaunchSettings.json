@@ -1,0 +1,12 @@
+﻿{
+  "profiles": {
+    "XUnitTestProject1": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "subscriptionKey": "[LUIS_SUBSCRIPTION_KEY]",
+        "endpoint": "[ENDPOINT e.g. https://westus.api.cognitive.microsoft.com]",
+        "appId": "[LUIS_APP_ID]"
+      }
+    }
+  }
+}
