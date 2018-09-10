@@ -1,6 +1,6 @@
-import { predict } from './client';
+import { createClient } from './client';
 
-namespace LuisTestCase {
+namespace LUISTestCase {
   export interface Entity {
     entity: string;
     startPos: number;
@@ -14,10 +14,14 @@ namespace LuisTestCase {
   }
 }
 
+const TestLuisClient = createClient(); // uses env settings by default
+
 export async function intentMatches(
-  luisTestCaseData: LuisTestCase.Data
+  luisTestCaseData: LUISTestCase.Data
 ): Promise<true> {
-  const { topScoringIntent } = await predict(luisTestCaseData.text);
+  const { topScoringIntent } = await TestLuisClient.predict(
+    luisTestCaseData.text
+  );
 
   if (!topScoringIntent) {
     throw new Error('No top scoring intent present.');
