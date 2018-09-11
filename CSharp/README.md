@@ -27,10 +27,10 @@ Any development of a LUIS app using 'proper' ALM practices requires the developm
   ```
 
   By declaring a single test method, every utterance in the input file will be tested to verify
-    - The expected intent is returned
-    - The expected entities are returned
-    - No unexpected entities are returned
-    - Optionally test that the intent confidence level returned for all test cases exceeds a specified value
+    * The expected intent is returned
+    * The expected entities are returned
+    * No unexpected entities are returned
+    * Optionally test that the intent confidence level returned for all test cases exceeds a specified value
 
 ## How to Unit Testing LUIS using xUnit
 
