@@ -15,7 +15,7 @@ namespace LUISTestCase {
   }
 }
 
-type BatchLUISTestCases = LUISTestCase.Data[];
+type LUISBatchTestCases = LUISTestCase.Data[];
 
 const TestLuisClient = createClient(); // uses env settings by default
 
@@ -26,39 +26,70 @@ export async function intentMatches(
     luisTestCaseData.text
   );
 
+  let errorMessage: string | undefined;
+
   if (!topScoringIntent) {
-    throw new Error('No top scoring intent present.');
+    errorMessage = 'No top scoring intent present.';
+  } else if (topScoringIntent.intent !== luisTestCaseData.intent) {
+    errorMessage = [
+      `Intents do not match.`,
+      `\tExpected: ${luisTestCaseData.intent}`,
+      `\tActual: ${topScoringIntent.intent}`
+    ].join('\n');
+  } else {
+    errorMessage = undefined;
   }
 
-  if (topScoringIntent.intent !== luisTestCaseData.intent) {
-    const errorMessage = [
-      `Test case for "${luisTestCaseData.text}" failed.`,
-      'Intents do not match.',
-      `Expected: ${luisTestCaseData.intent}`,
-      `Actual: ${topScoringIntent.intent}`
-    ].join('\n');
-    throw new Error(errorMessage);
+  if (errorMessage) {
+    throw new Error(
+      `Test case for "${luisTestCaseData.text}" failed: ${errorMessage}`
+    );
   }
 
   return true;
 }
 
+interface LUISTestFailure {
+  index: number;
+  message: string;
+}
+
 export async function intentsMatch(
-  batch: string | BatchLUISTestCases
+  batch: string | LUISBatchTestCases
 ): Promise<true> {
-  let batchData: BatchLUISTestCases;
+  let batchData: LUISBatchTestCases;
   if (typeof batch === 'string') {
     const rawData = readFileSync(path.join(__dirname, batch), 'utf-8');
-    batchData = JSON.parse(rawData) as BatchLUISTestCases;
+    batchData = JSON.parse(rawData) as LUISBatchTestCases;
   } else {
     batchData = batch;
   }
 
+  const testResults: LUISTestFailure[] = [];
+
   await Promise.all(
-    batchData.map(async testCase => {
-      return await intentMatches(testCase);
+    batchData.map(async (testCase, index) => {
+      try {
+        return await intentMatches(testCase);
+      } catch (e) {
+        testResults.push({
+          index,
+          message: e.message
+        });
+      }
     })
   );
+
+  if (testResults.length) {
+    const aggregateErrorMessage = [
+      `The following ${testResults.length} tests failed:`,
+      ...testResults
+        .sort((a, b) => a.index - b.index)
+        .map(testResult => testResult.message)
+    ].join('\n\n');
+
+    throw new Error(aggregateErrorMessage);
+  }
 
   return true;
 }

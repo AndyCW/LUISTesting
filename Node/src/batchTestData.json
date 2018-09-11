@@ -8,5 +8,10 @@
     "text": "please help me",
     "intent": "Helpx",
     "entities": []
+  },
+  {
+    "text": "I really need some help",
+    "intent": "Helpx",
+    "entities": []
   }
 ]
