@@ -4,6 +4,7 @@
   "description": "Unit tester for LUIS apps",
   "main": "index.js",
   "scripts": {
+    "start": "ts-node ./src/index.ts",
     "test": "mocha"
   },
   "author": "",

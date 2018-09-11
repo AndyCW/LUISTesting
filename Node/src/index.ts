@@ -1,5 +1,6 @@
 import { createClient } from './client';
-
+import { readFileSync } from 'fs';
+import * as path from 'path';
 namespace LUISTestCase {
   export interface Entity {
     entity: string;
@@ -13,6 +14,8 @@ namespace LUISTestCase {
     entities: Entity[];
   }
 }
+
+type BatchLUISTestCases = LUISTestCase.Data[];
 
 const TestLuisClient = createClient(); // uses env settings by default
 
@@ -28,20 +31,38 @@ export async function intentMatches(
   }
 
   if (topScoringIntent.intent !== luisTestCaseData.intent) {
-    throw new Error(
-      `Intents do not match.\nExpected: ${luisTestCaseData.intent}\nActual: ${
-        topScoringIntent.intent
-      }`
-    );
+    const errorMessage = [
+      `Test case for "${luisTestCaseData.text}" failed.`,
+      'Intents do not match.',
+      `Expected: ${luisTestCaseData.intent}`,
+      `Actual: ${topScoringIntent.intent}`
+    ].join('\n');
+    throw new Error(errorMessage);
   }
 
   return true;
 }
 
-intentMatches({
-  text: 'i need help',
-  intent: 'Help',
-  entities: []
-}).then(value => {
+export async function intentsMatch(
+  batch: string | BatchLUISTestCases
+): Promise<true> {
+  let batchData: BatchLUISTestCases;
+  if (typeof batch === 'string') {
+    const rawData = readFileSync(path.join(__dirname, batch), 'utf-8');
+    batchData = JSON.parse(rawData) as BatchLUISTestCases;
+  } else {
+    batchData = batch;
+  }
+
+  await Promise.all(
+    batchData.map(async testCase => {
+      return await intentMatches(testCase);
+    })
+  );
+
+  return true;
+}
+
+intentsMatch('batchTestData.json').then(value => {
   console.log(value);
 });
