@@ -39,17 +39,148 @@ For the example URI of https://westus.api.cognitive.microsoft.com/luis/v2.0/apps
   - Endpoint is *https://westus.api.cognitive.microsoft.com*
 
 Note the values for your app and insert them into your **.env** file (for Node.js), or your **Properties/launchSettings.json** file for xUnit
-  
-# Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.microsoft.com.
+# Tips on creating a Batch Test file
+A batch test file contains one or more test cases defining the utterance to send to LUIS, the Intent name you expect to get back, and the entities you expect to get back. The utterances should be different from those used to train the LUIS app to have any value as valid test cases. For each entity, the test file specifies the entity type and the start and end index where the enity is found in the utterance string. Notice that the entity value is not defined, although that can easily be determined by doing a simple string extraction with the start and end index in the utterance string.
+Here is an example of a single test case:
 
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+```json
+[
+  {
+    "text": "Are there any janitorial jobs currently open?",
+    "intent": "GetJobInformation",
+    "entities": [
+      {
+        "entity": "Job",
+        "startPos": 14,
+        "endPos": 23
+      }
+    ]
+  },
+...
+]
+```
+In this case, the utterance is sent to the LUIS app, and the test expects the response to show that the top intent is the **GetJobInformation** intent, and that a single simple entity will be returned of type **Job** which is at start index 14 and end index 23, which equates to the entity value of *janitorial*.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+Note that a batch test case cannot specify builtin entity types, such as builtin.DateTimeV2 or builtin.keyPhrase - only simple, heirarchical parents and composite entities may be specified. [Read more about batch test files in the LUIS documentation here.](https://docs.microsoft.com/en-us/azure/cognitive-services/luis/luis-concept-batch-test#entities-allowed-in-batch-tests).
+
+In a software development project using correct devOps practices, both the json export file defining your LUIS app and your test code and test files such as a batch test file should all be kept in an SCC (Source Code Control) system and are valuable assets for defining the progress through the development of your solution, and the test code becomes a crucial resource for ensuring that the LUIS app continues to perform correctly as it goes through different iterations.
+
+## Maintaining a Batch Test file
+You could of course maintain a batch test file using a text editor such as VS Code. However, the need to specify entities with startPos and endPos correct could make this a tedius and error prone operation.
+
+A good way of maintaining a batch test file is to [use the authoring tools offered by the LUIS.ai portal](https://docs.microsoft.com/en-us/azure/cognitive-services/luis/luis-how-to-add-example-utterances). 
+Use these steps to setup a LUIS app specifically for maintaining a  batch test set:
+  1. Create a new LUIS app you will use just for the batch test cases. If the LUIS test target app has already undergone some development, then you could export the test target app, use a text editor to edit the export file and delete all the utterances defined to train the app, then import the resultant file to create the new app.
+  1. Define Entities in the test app to match those in the test target, but only simple, heirarchical parents and composite entities. Do not bother to define any builtin entities as these are not allowed in a batch test file. 
+  **NOTE** As development of the project progresses and new entities are defined in the test target LUIS app, you will have to kepp the test file app updated with the same set of simple, heirarchical parents and composiste entities defined in the test target. 
+  1. Define the same Intents in the test app as those that exist for the test target.
+  1. Create utterances for the appropriate Intent for each test you want to run in the batch test. [use the authoring tools](https://docs.microsoft.com/en-us/azure/cognitive-services/luis/luis-how-to-add-example-utterances) to tag the entities that you expect to get back.
+  1. You do not need to train or publish the app.
+  1. [Export](https://docs.microsoft.com/en-us/azure/cognitive-services/luis/luis-how-to-start-new-app#export-app) the test app.
+  1. Use a text editor to edit the export file. Select all the json that defines the utterances, excluding the **&quot;utterances&quot;:** field label and save it to a new file. This file is your batch test file.
+
+<pre><code>
+<i>{
+  "luis_schema_version": "3.0.0",
+  "versionId": "0.2",
+  "name": "HumaResourcesTest",
+  "desc": "",
+  "culture": "en-us",
+  "intents": [
+    {
+      "name": "ApplyForJob"
+    },
+    {
+      "name": "EmployeeFeedback"
+    },
+    {
+      "name": "FindForm"
+    },
+    {
+      "name": "GetJobInformation"
+    },
+    {
+      "name": "MoveEmployee"
+    },
+    {
+      "name": "None"
+    }
+  ],
+  "entities": [
+    {
+      "name": "Job",
+      "roles": []
+    },
+    {
+      "name": "Locations",
+      "children": [
+        "Destination",
+        "Origin"
+      ],
+      "roles": []
+    }
+  ],
+  "composites": [
+    {
+      "name": "requestemployeemove",
+      "children": [
+        "datetimeV2",
+        "Locations::Destination",
+        "Employee",
+        "Locations::Origin"
+      ],
+      "roles": []
+    }
+  ],
+  ...
+  "regex_features": [],
+  "patterns": [],
+  "utterances":</i> <b>[
+    {
+      "text": "are there any janitorial jobs currently open?",
+      "intent": "GetJobInformation",
+      "entities": [
+        {
+          "entity": "Job",
+          "startPos": 14,
+          "endPos": 23
+        }
+      ]
+    },
+    {
+      "text": "i would like a fullstack typescript programming with azure job",
+      "intent": "GetJobInformation",
+      "entities": [
+        {
+          "entity": "Job",
+          "startPos": 15,
+          "endPos": 46
+        }
+      ]
+    },
+    {
+      "text": "is there a database position open in los colinas?",
+      "intent": "GetJobInformation",
+      "entities": [
+        {
+          "entity": "Job",
+          "startPos": 11,
+          "endPos": 18
+        }
+      ]
+    },
+    {
+      "text": "please find database jobs open today in seattle",
+      "intent": "GetJobInformation",
+      "entities": [
+        {
+          "entity": "Job",
+          "startPos": 12,
+          "endPos": 19
+        }
+      ]
+    }
+  ]</b>
+<i>}</i>
+</code></pre>
