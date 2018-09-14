@@ -1,20 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace XUnitTestProject1
 {
     public class Entity
     {
-        public string entity { get; set; }
-        public int startPos { get; set; }
-        public int endPos { get; set; }
+        [JsonProperty(PropertyName ="entity")]
+        public string EntityName { get; set; }
+
+        [JsonProperty(PropertyName = "startPos")]
+        public int StartPosition { get; set; }
+
+        [JsonProperty(PropertyName ="endPos")]
+        public int EndPosition { get; set; }
     }
 
     public class LuisTestCaseData
     {
-        public string text { get; set; }
-        public string intent { get; set; }
-        public List<Entity> entities { get; set; }
+        [JsonProperty(PropertyName ="text")]
+        public string Utterance { get; set; }
+
+        [JsonProperty(PropertyName = "intent")]
+        public string Intent { get; set; }
+
+        [JsonProperty(PropertyName = "entities")]
+        public List<Entity> Entities { get; set; }
     }
 }
