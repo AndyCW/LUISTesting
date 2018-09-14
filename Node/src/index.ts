@@ -1,6 +1,10 @@
 import { createClient } from './client';
 import { readFileSync } from 'fs';
 import * as path from 'path';
+import {
+  LuisResult,
+  EntityModel
+} from 'azure-cognitiveservices-luis-runtime/lib/models';
 namespace LUISTestCase {
   export interface Entity {
     entity: string;
@@ -11,7 +15,7 @@ namespace LUISTestCase {
   export interface Data {
     text: string;
     intent: string;
-    entities: Entity[];
+    entities: EntityModel[];
   }
 }
 
@@ -19,12 +23,12 @@ type LUISBatchTestCases = LUISTestCase.Data[];
 
 const TestLuisClient = createClient(); // uses env settings by default
 
-export async function intentMatches(
+export async function testExpectedIntent(
   luisTestCaseData: LUISTestCase.Data
 ): Promise<true> {
-  const { topScoringIntent } = await TestLuisClient.predict(
-    luisTestCaseData.text
-  );
+  const result = await TestLuisClient.predict(luisTestCaseData.text);
+
+  const { topScoringIntent } = result;
 
   let errorMessage: string | undefined;
 
@@ -44,6 +48,76 @@ export async function intentMatches(
     throw new Error(
       `Test case for "${luisTestCaseData.text}" failed: ${errorMessage}`
     );
+  }
+
+  testEntitiesForFalseNegatives(
+    result,
+    luisTestCaseData.text,
+    luisTestCaseData.entities
+  );
+
+  return true;
+}
+
+export function testEntitiesForFalseNegatives(
+  result: LuisResult,
+  utterance: string,
+  expectedEntities: EntityModel[]
+): boolean {
+  // const errors: string[] = [];
+  expectedEntities.forEach(expectedEntity => {
+    const { startIndex, endIndex } = expectedEntity;
+    const entityValue = utterance.slice(startIndex, endIndex - startIndex);
+
+    if (entityValue !== expectedEntity.entity) {
+      throw new Error(`${entityValue} != ${expectedEntity.entity}`);
+    }
+
+    testIsEntityPresent(result, utterance, entityValue);
+  });
+
+  return true;
+}
+
+export function testIsEntityPresent(
+  result: LuisResult,
+  utterance: string,
+  expectedEntity: string,
+  expectedStartIndex: number = -1
+): boolean {
+  if (!result.entities) {
+    throw new Error('no entities present');
+  }
+
+  const customEntities = (result.entities || [])
+    .filter(item => {
+      if (item.type.indexOf('builtin') !== 0) {
+        return true;
+      }
+    })
+    .map(item => item.entity);
+
+  let message = `Utterance: "${utterance}" Expected entity "${expectedEntity}"`;
+
+  if (expectedStartIndex > -1) {
+    message += ` at start index ${expectedStartIndex}`;
+  }
+  message += `, actual entities: [${customEntities.join("' ")}]`;
+
+  if (expectedStartIndex > -1) {
+    if (
+      result.entities.find(e => {
+        return (
+          e.entity === expectedEntity && e.startIndex === expectedStartIndex
+        );
+      }) === undefined
+    ) {
+      throw new Error(message);
+    }
+  } else {
+    if (result.entities.find(e => e.entity === expectedEntity) === undefined) {
+      throw new Error(message);
+    }
   }
 
   return true;
@@ -70,7 +144,7 @@ export async function intentsMatch(
   await Promise.all(
     batchData.map(async (testCase, index) => {
       try {
-        return await intentMatches(testCase);
+        return await testExpectedIntent(testCase);
       } catch (e) {
         testResults.push({
           index,
