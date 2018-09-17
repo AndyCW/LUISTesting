@@ -123,6 +123,18 @@ export function testIsEntityPresent(
   return true;
 }
 
+export function testExpectedMinConfidenceScore(result: LuisResult, utterance: string, minConfidence: number): boolean {
+  if (result.topScoringIntent) {
+    if (result.topScoringIntent.score! < minConfidence) {
+      throw new Error(`Utterance: "${utterance}" Top scoring Intent confidence < ${minConfidence}, actual: ${result.topScoringIntent.score}`)
+    }
+  } else {
+    throw new Error(`Utterance: "${utterance}" Top scoring Intent missing. Expected: intent with score > ${minConfidence}`);
+  }
+
+  return true;
+}
+
 interface LUISTestFailure {
   index: number;
   message: string;
